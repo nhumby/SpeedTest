@@ -1,0 +1,9 @@
+@SpeedTestMiniApi_HostAddress = http://localhost:5133
+
+GET {{SpeedTestMiniApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+GET {{SpeedTestMiniApi_HostAddress}}/swagger/
+Accept: application/json
