@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 
+using ILoggerFactory factory = LoggerFactory.Create(builder => 
+{
+    builder.AddConsole();
+});
+ILogger logger= factory.CreateLogger<Program>();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddSingleton<ISpeedTestService, SpeedTestService>();
-builder.Services.AddHostedService<ISpeedTestService>();
+builder.Services.AddHostedService<SpeedTestService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -20,33 +25,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
-app.MapGet("/networkspeed", ([FromServices]ISpeedTestService speedTestService) =>
-{
-    return new NetworkSpeedReader(speedTestService).GetRecords();
-})
-.WithName("NetworkSpeed")
-.WithOpenApi();
+app.MapGets();
 
 app.Run();
 
