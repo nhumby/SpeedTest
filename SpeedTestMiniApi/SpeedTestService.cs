@@ -1,31 +1,39 @@
 public class SpeedTestService : ISpeedTestService
 {
-    private readonly List<double> _speedRecords;
+    private readonly ILogger logger;
     private HttpClient? _httpClient;
 
-    public SpeedTestService()
+    public SpeedTestService(ILoggerFactory loggerFactory)
     {
-        _speedRecords = [];
+        SpeedTestRecords.Records.Clear();
+        ArgumentException.ThrowIfNullOrEmpty(nameof(loggerFactory));
+        logger = loggerFactory.CreateLogger<SpeedTestService>();
+        logger.LogInformation("Created.");
     }
 
     public void Dispose()
     {
         _httpClient?.Dispose();
         _httpClient = null;
+        logger.LogInformation("Disposed.");
     }
 
-    public IEnumerable<double> GetSpeedRecords()
+    public IEnumerable<SpeedTestRecord> GetSpeedRecords()
     {
-        return _speedRecords.AsReadOnly();
+        logger.LogInformation("GetSpeedRecords is returning {_speedRecords.Count} records.", SpeedTestRecords.Records.Count);
+        return SpeedTestRecords.Records.AsReadOnly();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Starting up.");
         _httpClient = new HttpClient();
+        var count = 0;
 
-        while (true)
+        while (count++ < 3)
         {
-            _speedRecords.Add(await CheckInternetSpeed());
+            SpeedTestRecords.Records.Add(new(DateTime.UtcNow, await CheckInternetSpeed()));
+            logger.LogInformation("Record added.");
             Thread.Sleep(1000);
         }
     }
@@ -55,4 +63,11 @@ public class SpeedTestService : ISpeedTestService
         //To Calculate Speed in Kb Divide Value Of data by 1024 And Then by End Time Subtract Start Time To Know Download Per Second.
         return Math.Round((data.Length / 1024) / (dt2 - dt1).TotalSeconds, 2);
     }
+}
+
+public record struct SpeedTestRecord(DateTime DateTimeUtc, double kbps);
+
+public static class SpeedTestRecords
+{
+    public static List<SpeedTestRecord> Records { get; set; } = [];
 }

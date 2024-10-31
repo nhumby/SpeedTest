@@ -8,7 +8,7 @@ public class NetworkSpeedReader
             throw new ArgumentNullException(nameof(speedTestService));
     }
 
-    public IEnumerable<double> GetRecords()
+    public IEnumerable<SpeedTestRecord> GetRecords()
     {
         return speedTestService.GetSpeedRecords();
     }

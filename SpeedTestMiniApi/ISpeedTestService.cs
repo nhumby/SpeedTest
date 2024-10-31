@@ -1,4 +1,4 @@
 public interface ISpeedTestService : IHostedService, IDisposable
 {
-    IEnumerable<double> GetSpeedRecords();
+    IEnumerable<SpeedTestRecord> GetSpeedRecords();
 }
