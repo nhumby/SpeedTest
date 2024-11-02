@@ -1,40 +1,42 @@
 public class SpeedTestService : ISpeedTestService
 {
-    private readonly ILogger logger;
+    private readonly ILogger<SpeedTestService> logger;
     private HttpClient? _httpClient;
 
-    public SpeedTestService(ILoggerFactory loggerFactory)
+    public SpeedTestService(ILogger<SpeedTestService> logger)
     {
         SpeedTestRecords.Records.Clear();
-        ArgumentException.ThrowIfNullOrEmpty(nameof(loggerFactory));
-        logger = loggerFactory.CreateLogger<SpeedTestService>();
-        logger.LogInformation("Created.");
+        ArgumentException.ThrowIfNullOrEmpty(nameof(logger));
+        this.logger = logger;
+        this.logger.LogInformation("New instance of SpeedTestService created.");
     }
 
     public void Dispose()
     {
         _httpClient?.Dispose();
         _httpClient = null;
-        logger.LogInformation("Disposed.");
+        logger.LogInformation("SpeedTestService disposed.");
     }
 
     public IEnumerable<SpeedTestRecord> GetSpeedRecords()
     {
-        logger.LogInformation("GetSpeedRecords is returning {_speedRecords.Count} records.", SpeedTestRecords.Records.Count);
+        var recordsCount = SpeedTestRecords.Records.Count;
+        logger.LogInformation("SpeedTestService: GetSpeedRecords is returning {recordsCount} records.", recordsCount);
         return SpeedTestRecords.Records.AsReadOnly();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Starting up.");
+        logger.LogInformation("SpeedTestService starting up.");
         _httpClient = new HttpClient();
         var count = 0;
 
         while (count++ < 3)
         {
-            SpeedTestRecords.Records.Add(new(DateTime.UtcNow, await CheckInternetSpeed()));
-            logger.LogInformation("Record added.");
-            Thread.Sleep(1000);
+            var recordedSpeed = await CheckInternetSpeed();
+            SpeedTestRecords.Records.Add(new(DateTime.UtcNow, recordedSpeed));
+            logger.LogInformation("SpeedTestService record added {recordedSpeed}.", recordedSpeed);
+            Thread.Sleep(10000);
         }
     }
 

@@ -4,20 +4,29 @@ using System.Reflection;
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
-Log.Information("Starting up {Assembly.GetExecutingAssembly().FullName}", Assembly.GetExecutingAssembly().FullName);
+var fullName = Assembly.GetExecutingAssembly().FullName;
+Log.Information("Starting up {fullName}", fullName);
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
     builder.Services.AddSerilog();
-
+    
     // Add services to the container.
-    //builder.Services.AddSingleton<List<SpeedTestRecord>>();
+    builder.Services.AddSingleton<ISpeedTestService, SpeedTestService>();
     // https://nblumhardt.com/2024/04/serilog-net8-0-minimal/
     // https://stackoverflow.com/questions/51480324/proper-way-to-register-hostedservice-in-asp-net-core-addhostedservice-vs-addsin
     // https://learn.microsoft.com/en-us/dotnet/core/extensions/windows-service
+    // https://learn.microsoft.com/en-us/dotnet/core/extensions/logging?tabs=command-line
+    // https://learn.microsoft.com/en-us/dotnet/core/extensions/logging?tabs=command-line#integration-with-hosts-and-dependency-injection
+    // https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/generic-host?view=aspnetcore-8.0
+    // https://learn.microsoft.com/en-us/dotnet/core/extensions/timer-service
+    // http://localhost:5133/networkspeed/
 
-    builder.Services.AddHostedService<SpeedTestService>();
+    // Need somewhere to store the records.
+
+    // builder.Services.AddHostedService<SpeedTestService>();
+    builder.Services.AddHostedService(p => p.GetRequiredService<ISpeedTestService>());
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
