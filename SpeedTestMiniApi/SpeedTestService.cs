@@ -2,10 +2,10 @@ public class SpeedTestService : ISpeedTestService
 {
     private readonly ILogger<SpeedTestService> logger;
     private HttpClient? _httpClient;
+    private Timer? _timer;
 
     public SpeedTestService(ILogger<SpeedTestService> logger)
     {
-        SpeedTestRecords.Records.Clear();
         ArgumentException.ThrowIfNullOrEmpty(nameof(logger));
         this.logger = logger;
         this.logger.LogInformation("New instance of SpeedTestService created.");
@@ -13,6 +13,8 @@ public class SpeedTestService : ISpeedTestService
 
     public void Dispose()
     {
+        _timer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _timer?.Dispose();
         _httpClient?.Dispose();
         _httpClient = null;
         logger.LogInformation("SpeedTestService disposed.");
@@ -25,19 +27,20 @@ public class SpeedTestService : ISpeedTestService
         return SpeedTestRecords.Records.AsReadOnly();
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("SpeedTestService starting up.");
+        SpeedTestRecords.Records.Clear();
         _httpClient = new HttpClient();
-        var count = 0;
+        _timer = new Timer(TimerElapsed, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        return Task.CompletedTask;
+    }
 
-        while (count++ < 3)
-        {
-            var recordedSpeed = await CheckInternetSpeed();
-            SpeedTestRecords.Records.Add(new(DateTime.UtcNow, recordedSpeed));
-            logger.LogInformation("SpeedTestService record added {recordedSpeed}.", recordedSpeed);
-            Thread.Sleep(10000);
-        }
+    private async void TimerElapsed(object? state)
+    {
+        var recordedSpeed = await CheckInternetSpeed();
+        SpeedTestRecords.Records.Add(new(DateTime.UtcNow, recordedSpeed));
+        logger.LogInformation("SpeedTestService record added {recordedSpeed}MBps.", recordedSpeed);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -57,17 +60,17 @@ public class SpeedTestService : ISpeedTestService
         DateTime dt1 = DateTime.UtcNow;
 
         //Number Of Bytes Downloaded Are Stored In ‘data’
-        byte[] data = await _httpClient.GetByteArrayAsync("http://google.com");
+        byte[] data = await _httpClient.GetByteArrayAsync("http://google.com"); //"https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.403-windows-x64-installer"););
 
         //DateTime Variable To Store Download End Time.
         DateTime dt2 = DateTime.UtcNow;
 
         //To Calculate Speed in Kb Divide Value Of data by 1024 And Then by End Time Subtract Start Time To Know Download Per Second.
-        return Math.Round((data.Length / 1024) / (dt2 - dt1).TotalSeconds, 2);
+        return Math.Round(((double)data.Length / 1024d / 1024d) / (dt2 - dt1).TotalSeconds, 2);
     }
 }
 
-public record struct SpeedTestRecord(DateTime DateTimeUtc, double kbps);
+public record struct SpeedTestRecord(DateTime DateTimeUtc, double MBps);
 
 public static class SpeedTestRecords
 {
